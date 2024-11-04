@@ -26,7 +26,7 @@ A task is a unit of work that can be executed independently of other tasks. Mult
 
 ### Async/Await vs Task-based programming
 
-Task and Task<T> are used both with Async/Await as well as Task-based programming. Task and Task<T> represent work that’s done asynchronously and can be started, awaited etc but these don't handle thread assignment.
+Task and Task`<T>` are used both with Async/Await as well as Task-based programming. Task and Task<T> represent work that’s done asynchronously and can be started, awaited etc but these don't handle thread assignment.
 
 Tasks created and run using Task.Run or Task.Factory.StartNew are assigned work to a separate thread from thread pool.
 
@@ -77,7 +77,7 @@ Everything ran on single thread synchronously.
 #### Await Keyword
 Await is the one that does the magic. For those asynchronous operations for which we do not want to block the execution thread i.e. the current thread, we can use the await operator. 
 
-So, when we use await operator, what we are doing is, we are freeing the current thread from having to wait for the execution of the task. The Current Thread is released and returns to thread pool and the control returns to the calling thread/function till the awaited task is completed after which the control will return back to the function and it will run on a different thread to complete remaining operation. In this way, we are avoiding blocking the current thread that we’re using and then that thread can be used in another task.
+So, when we use await operator, what we are doing is, we are freeing the current thread from having to wait for the execution of the task. The control returns to the calling thread/function till the awaited task is completed on a different thread asynchronously. In this way, we are avoiding blocking the current thread that we’re using and then that thread can be used in another task.
 
 ```csharp
 public class AsyncProgramming
@@ -180,6 +180,7 @@ class MainCode
         {
             task1, task2, task3, task4, task5, task6
         };
+        // Creates a task that will complete when all of the supplied tasks have completed.
         await Task.WhenAll(tasks);
     }
 
@@ -226,8 +227,44 @@ Task Yield example Completed,thread - 13
 Main Function is completed on Thread - 1
 ```
 
-**Async tasks creating using Task run on a separate thread from the calling thread unlike in async function.**
+**Important - Async tasks creating using Task run on a separate thread from the calling thread unlike in async function which starts running on the same thread and run the awaited operation on a different thread.**
 
+#### ContinueWith
+Creates a continuation that executes asynchronously when the target Task completes.
+
+```csharp
+Task<string> task1 = Task.Run(() =>
+{
+    return 12;
+}).ContinueWith((antecedent) =>
+{
+    return $"The Square of {antecedent.Result} is: {antecedent.Result * antecedent.Result}";
+});
+Console.WriteLine(task1.Result);
+```
+```txt
+Output -
+The Square of 12 is : 144
+```
+```csharp
+Task<int> task = Task.Run(() =>
+{
+    return 10;
+});
+task.ContinueWith((i) =>
+{
+    Console.WriteLine("TasK Canceled");oka
+}, TaskContinuationOptions.OnlyOnCanceled);
+task.ContinueWith((i) =>
+{
+    Console.WriteLine("Task Faulted");
+}, TaskContinuationOptions.OnlyOnFaulted);
+var completedTask = task.ContinueWith((i) =>
+{
+    Console.WriteLine("Task Completed");
+}, TaskContinuationOptions.OnlyOnRanToCompletion);
+completedTask.Wait();
+```
 #### Thread Pool
 A thread pool is a collection of pre-initialized threads that are managed and maintained by the operating system or a threading library, which can be reused to perform multiple tasks without the overhead of creating and destroying threads for each task.
 
